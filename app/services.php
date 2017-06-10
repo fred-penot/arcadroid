@@ -12,6 +12,10 @@ $app['monolog.game'] = $app->share(
     });
 /***** service *****/
 
+$app['service.security'] = function ($app) {
+    return new Arcadroid\Services\Security($app['db']);
+};
+
 $app['service.game'] = function ($app) {
-    return new Arcadroid\Services\Japscan($app['db'], $app['monolog']);
+    return new Arcadroid\Services\Game($app['db'], $app['monolog']);
 };

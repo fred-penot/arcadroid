@@ -1,5 +1,5 @@
 <?php
-namespace DomoApi\Services;
+namespace Arcadroid\Services;
 
 class Game {
     private $db = null;
