@@ -3,7 +3,7 @@
         "silex/silex": "~1.3",
         "doctrine/dbal": "~2.2",
         "monolog/monolog": "*",
-        "knplabs/console-service-provider": "*",
+        "knplabs/console-service-provider": "*"
     },
     "autoload": {
         "psr-4": {"Arcadroid\\": "src"}
