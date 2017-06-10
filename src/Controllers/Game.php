@@ -7,12 +7,12 @@ $game = $app['controllers_factory'];
 $game->get('/api/list/{token}', 
     function ($token) use($app) {
         try {
-            $listeDevice = $app['service.game']->getList();
-            if ($listeDevice instanceof \Exception) {
-                throw new \Exception($listeDevice->getMessage());
+            $gameList = $app['service.game']->getList();
+            if ($gameList instanceof \Exception) {
+                throw new \Exception($gameList->getMessage());
             }
             $app['retour'] = array(
-                "listeDevice" => $listeDevice
+                "gameList" => $gameList
             );
         } catch (\Exception $ex) {
             $app['retour'] = $ex;
