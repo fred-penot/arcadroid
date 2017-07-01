@@ -1,4 +1,4 @@
-#!/usr/bin/env php
+#!/usr/bin/env /usr/local/zend/bin/php
 <?php
 
 // set to run indefinitely if needed
