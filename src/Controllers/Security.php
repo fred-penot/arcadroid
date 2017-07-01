@@ -1,30 +1,29 @@
 <?php
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Request;
 use Silex\Application;
 
 $security = $app['controllers_factory'];
 
-$security->get('/api/auth/{login}/{password}', 
-    function ($login, $password) use($app) {
+$security->post('/auth',
+    function (Request $request) use($app) {
         try {
-            $auth = $app['service.security']->auth($login, $password);
-            if ($auth instanceof \Exception) {
-                throw new \Exception($auth->getMessage());
-            }
+            $auth = $app['service.security']->auth($request->getContent());
             $app['newToken'] = $auth['token'];
             $app['retour'] = $auth;
         } catch (\Exception $ex) {
+            $app['code'] = $ex->getCode();
             $app['retour'] = $ex;
         }
         return new Response();
     })
     ->after($jsonReturn);
 
-$security->get('/api/check/auth/{token}', 
-    function ($token) use($app) {
+$security->post('/auth/check',
+    function () use($app) {
         try {
-            $app['retour'] = true;
         } catch (\Exception $ex) {
+            $app['code'] = $ex->getCode();
             $app['retour'] = $ex;
         }
         return new Response();

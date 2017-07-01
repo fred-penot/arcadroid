@@ -18,4 +18,3 @@ require __DIR__ . '/middleware.php';
 require __DIR__ . '/routing.php';
 // chargement des services de l'application
 require __DIR__ . '/services.php';
-

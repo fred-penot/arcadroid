@@ -3,94 +3,47 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Silex\Application;
 
+// function after à positionner obligatoirement avant les routes
+$jsonReturn = function (Request $request, Response $response, Application $app) {
+    $retour = [];
+    try {
+        if ($app['retour'] instanceof \Exception) {
+            throw new \Exception($app['retour']->getMessage(), $app['retour']->getCode());
+        }
+        $retour['token'] = $app['newToken'];
+        $retour['data'] = $app['retour'];
+        if (isset($retour['data']['token'])) {
+            unset($retour['data']['token']);
+        }
+        $app['code'] = 200;
+    } catch (\Exception $ex) {
+        $app['monolog']->addError($ex->getMessage());
+        $retour['message'] = $ex->getMessage();
+        $app['code'] = $ex->getCode();
+    }
+    $header = array(
+        "Access-Control-Allow-Origin" => "*"
+    );
+    return $app->json($retour, $app['code'], $header);
+};
+
 // function before à positionner obligatoirement avant les routes
 $checkAuth = function (Request $request, Application $app) {
     try {
-        if (! $request->get('token')) {
-            throw new \Exception("Veuillez fournir un token.");
+        $json = json_decode($request->getContent());
+        if (!isset($json->token)) {
+            throw new \Exception("Veuillez fournir un token.",500);
         }
-        $newToken = $app['service.security']->checkAndUpdateToken($request->get('token'));
-        if ($newToken instanceof \Exception) {
-            throw new \Exception($newToken->getMessage());
-        }
-        $userId = $app['service.security']->getUser($newToken);
-        if ($userId instanceof \Exception) {
-            throw new \Exception($userId->getMessage());
-        }
+        $newToken = $app['service.security']->checkAndUpdateToken($json->token);
+        $user = $app['service.security']->getUser($newToken);
         $app['newToken'] = $newToken;
-        $app['user_id'] = $userId;
+        $app['user'] = $user;
+        $app['retour'] = [
+            "profil" => $user['profil']
+        ];
         return;
     } catch (\Exception $ex) {
         $app['retour'] = $ex;
-        return new Response();
+        throw new \Exception($ex->getMessage(),$ex->getCode());
     }
-};
-// function after à positionner obligatoirement avant les routes
-$jsonReturn = function (Request $request, Response $response, Application $app) {
-    try {
-        if ($app['retour'] instanceof \Exception) {
-            throw new \Exception($app['retour']->getMessage());
-        }
-        if (is_array($app['retour'])) {
-            if (isset($app['retour']['statut'])) {
-                $statut = $app['retour']['statut'];
-                $data = $app['retour']['data'];
-            } else {
-                $statut = true;
-                $data = $app['retour'];
-            }
-            $data['token'] = $app['newToken'];
-        } else {
-            $statut = $app['retour'];
-            $data = $app['newToken'];
-        }
-        $retour = array(
-            "statut" => $statut,
-            "data" => $data
-        );
-    } catch (\Exception $ex) {
-        $app['monolog']->addError($ex->getMessage());
-        $retour = array(
-            "statut" => false,
-            "data" => $ex->getMessage()
-        );
-    }
-    $header = array(
-        "Access-Control-Allow-Origin" => "*"
-    );
-    return $app->json($retour, 200, $header);
-};
-
-$jsonForexReturn = function (Request $request, Response $response, Application $app) {
-    try {
-        if ($app['retour'] instanceof \Exception) {
-            throw new \Exception($app['retour']->getMessage());
-        }
-        if (is_array($app['retour'])) {
-            if (isset($app['retour']['statut'])) {
-                $statut = $app['retour']['statut'];
-                $data = $app['retour']['data'];
-            } else {
-                $statut = true;
-                $data = $app['retour'];
-            }
-        } else {
-            $statut = $app['retour'];
-            $data = array();
-        }
-        $retour = array(
-            "statut" => $statut,
-            "data" => $data
-        );
-    } catch (\Exception $ex) {
-        $app['monolog']->addError($ex->getMessage());
-        $retour = array(
-            "statut" => false,
-            "data" => $ex->getMessage()
-        );
-    }
-    $header = array(
-        "Access-Control-Allow-Origin" => "*"
-    );
-    return $app->json($retour, 200, $header);
 };
