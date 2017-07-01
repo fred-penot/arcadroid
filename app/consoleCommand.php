@@ -1,2 +1,2 @@
 <?php
-//$console->add(new \DomoApi\Commands\ForexAddArchiveCommand());
+$console->add(new Arcadroid\Commands\LaunchGameCommand());

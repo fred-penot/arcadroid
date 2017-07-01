@@ -18,7 +18,8 @@ $app->register(new Silex\Provider\DoctrineServiceProvider(),
 // register log
 $app->register(new Silex\Provider\MonologServiceProvider(), 
     array(
-        'monolog.logfile' => __DIR__ . '/log/' . $app['parameter.log.name']
+        'monolog.logfile' => __DIR__ . '/log/' . $app['parameter.log.name'],
+        'monolog.game' => __DIR__ . '/log/' . $app['parameter.log.game'],
     ));
 
 // register console
