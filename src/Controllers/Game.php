@@ -53,5 +53,41 @@ $game->post('/one/full',
     ->before($checkAuth, Application::EARLY_EVENT)
     ->after($jsonReturn);
 
+$game->post('/launch',
+    function (Request $request) use($app) {
+        try {
+            $app['retour'] = $app['service.game']->launch($request->getContent());
+        } catch (\Exception $ex) {
+            $app['retour'] = $ex;
+        }
+        return new Response();
+    })
+    ->before($checkAuth, Application::EARLY_EVENT)
+    ->after($jsonReturn);
+
+$game->post('/stop',
+    function (Request $request) use($app) {
+        try {
+            $app['retour'] = $app['service.game']->stop();
+        } catch (\Exception $ex) {
+            $app['retour'] = $ex;
+        }
+        return new Response();
+    })
+    ->before($checkAuth, Application::EARLY_EVENT)
+    ->after($jsonReturn);
+
+$game->post('/current',
+    function (Request $request) use($app) {
+        try {
+            $app['retour'] = $app['service.game']->getCurrentRunning();
+        } catch (\Exception $ex) {
+            $app['retour'] = $ex;
+        }
+        return new Response();
+    })
+    ->before($checkAuth, Application::EARLY_EVENT)
+    ->after($jsonReturn);
+
 return $game;
 
