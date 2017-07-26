@@ -20,6 +20,18 @@ class Game {
         }
     }
 
+    public function getGameEmulatorList($json) {
+        try {
+            $request = json_decode($json);
+            if (!isset($request->emulatorId)) {
+                throw new \Exception("Veuiller renseigner l'attribut 'emulatorId'", 500);
+            }
+            return $this->getGameInfo('where e.id='.$request->emulatorId.';', false);
+        } catch (\Exception $ex) {
+            throw new \Exception("Erreur lors de la récupération de l'ensemble des jeux de l'émulateur: ".$ex->getMessage(), $ex->getCode());
+        }
+    }
+
     public function getFullGameList() {
         try {
             return $this->getGameInfo(null, true);
@@ -130,6 +142,16 @@ class Game {
             throw new \Exception("Erreur lors de la récupération du jeu courant : ".$ex->getMessage(), $ex->getCode());
         }
 
+    }
+
+    public function getEmulator() {
+        try {
+            $sql = "SELECT e.id as id, e.name as name from emulator e;";
+            $emulator = $this->db->fetchAll($sql);
+            return $emulator;
+        } catch (\Exception $ex) {
+            throw new \Exception($ex->getMessage(), 500);
+        }
     }
 
     private function sshConnectRecalbox() {

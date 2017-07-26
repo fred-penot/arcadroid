@@ -89,5 +89,29 @@ $game->post('/current',
     ->before($checkAuth, Application::EARLY_EVENT)
     ->after($jsonReturn);
 
+$game->post('/get/emulator',
+    function (Request $request) use($app) {
+        try {
+            $app['retour'] = $app['service.game']->getEmulator();
+        } catch (\Exception $ex) {
+            $app['retour'] = $ex;
+        }
+        return new Response();
+    })
+    ->before($checkAuth, Application::EARLY_EVENT)
+    ->after($jsonReturn);
+
+$game->post('/list/emulator',
+    function (Request $request) use($app) {
+        try {
+            $app['retour'] = $app['service.game']->getGameEmulatorList($request->getContent());
+        } catch (\Exception $ex) {
+            $app['retour'] = $ex;
+        }
+        return new Response();
+    })
+    ->before($checkAuth, Application::EARLY_EVENT)
+    ->after($jsonReturn);
+
 return $game;
 
