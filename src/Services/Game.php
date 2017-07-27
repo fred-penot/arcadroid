@@ -72,11 +72,12 @@ class Game {
             }
             $gameInfo = $this->getGameInfo('where g.id='.$request->id.';', false);
             $sshCon = $this->sshConnectRecalbox();
-            $cmd = '/recalbox/scripts/runcommand.sh 4 "retroarch -L /usr/lib/libretro/mame078_libretro.so --config /recalbox/share/system/configs/retroarch/retroarchcustom.cfg /recalbox/share/roms/mame/'.$gameInfo[0]['rom'].'.zip"';
-            $stream = ssh2_exec($sshCon, $cmd);
+            $stream = ssh2_exec($sshCon, $gameInfo[0]['command']);
             if( !$stream ) {
                 throw new \Exception("Impossible de lancer la commande !", 500);
             }
+            stream_set_blocking($stream, true);
+            $streamLines = stream_get_contents($stream);
             return true;
         } catch (\Exception $ex) {
             throw new \Exception("Erreur lors du lancement du jeu : ".$ex->getMessage(), $ex->getCode());
@@ -87,24 +88,26 @@ class Game {
     public function stop() {
         try {
             $sshCon = $this->sshConnectRecalbox();
-            $cmd = 'ps -ef | grep retroarch | grep -v grep';
-            $streamGrep = ssh2_exec($sshCon, $cmd);
-            if( !$streamGrep ) {
-                throw new \Exception("Impossible de lancer la commande !", 500);
-            } else {
-                $pid = null;
-                stream_set_blocking($streamGrep, true);
-                $streamLines = stream_get_contents($streamGrep);
-                $lines = explode("\n", $streamLines);
-                foreach ($lines as $line){
-                    $field = explode(" ", $line);
-                    $pid = $field[0];
-                    if ($pid == '') {
-                        $pid = $field[1];
-                    }
-                    $streamKill = ssh2_exec( $sshCon, 'kill '.$pid );
-                    if( !$streamKill ) {
-                        throw new \Exception("Impossible de tuer le processus".$pid." !", 500);
+            $searchType = ['retroarch', 'mupen64plus'];
+            foreach ($searchType as $search) {
+                $cmd = 'ps -ef | grep '.$search.' | grep -v grep';
+                $streamGrep = ssh2_exec($sshCon, $cmd);
+                if( !$streamGrep ) {
+                    throw new \Exception("Impossible de lancer la commande !", 500);
+                } else {
+                    $pid = null;
+                    stream_set_blocking($streamGrep, true);
+                    $streamLines = stream_get_contents($streamGrep);
+                    $lines = explode("\n", $streamLines);
+                    foreach ($lines as $line){
+                        $field = explode(" ", trim($line));
+                        $pid = $field[0];
+                        if ($pid!=''){
+                            $streamKill = ssh2_exec( $sshCon, 'kill '.$pid );
+                            if( !$streamKill ) {
+                                throw new \Exception("Impossible de tuer le processus".$pid." !", 500);
+                            }
+                        }
                     }
                 }
             }
@@ -118,7 +121,7 @@ class Game {
     public function getCurrentRunning() {
         try {
             $sshCon = $this->sshConnectRecalbox();
-            $cmd = 'ps -ef | grep /recalbox/share/roms/mame/ | grep -v grep';
+            $cmd = 'ps -ef | grep /recalbox/share/roms/ | grep -v grep';
             $streamGrep = ssh2_exec($sshCon, $cmd);
             if( !$streamGrep ) {
                 throw new \Exception("Impossible de lancer la commande !", 500);
@@ -128,8 +131,9 @@ class Game {
                 $lines = explode("\n", $streamLines);
                 if (count($lines) > 0) {
                     foreach ($lines as $line){
-                        $field = explode('/recalbox/share/roms/mame/', $line);
-                        $romZip = trim($field[1]);
+                        $field = explode('/recalbox/share/roms/', $line);
+                        $path = explode('/', $field[1]);
+                        $romZip = trim($path[1]);
                         break;
                     }
                     $gameInfo = $this->getGameInfo('where g.rom="'.str_replace('.zip', '', $romZip).'";', true);
@@ -180,7 +184,7 @@ class Game {
             $gameList = array();
             $sql = "SELECT g.id as id, g.name as title, g.rom as rom, ".
                 " g.keyword as keyword, t.id as type_id, t.name as type_name, ".
-                " e.id as emulator_id, e.name as emulator_name FROM game g " .
+                " e.id as emulator_id, e.name as emulator_name, e.command as emulator_command FROM game g " .
                 "JOIN type t ON t.id=g.type_id " .
                 "JOIN emulator e ON e.id=g.emulator_id ";
             if ($where) {
@@ -188,6 +192,7 @@ class Game {
             }
             $games = $this->db->fetchAll($sql);
             foreach ($games as $game) {
+                $command = str_replace('__ROM_NAME__', $game['rom'], $game['emulator_command']);
                 $gameList[] = array(
                     "id" => $game['id'],
                     "name" => $game['title'],
@@ -201,6 +206,7 @@ class Game {
                         "id" => $game['emulator_id'],
                         "name" => $game['emulator_name']
                     ),
+                    "command" => $command
                 );
                 if ($withScreenView) {
                     $gameList[count($gameList)-1]["screenview"] = $this->getGoogleImage($game['keyword']);
