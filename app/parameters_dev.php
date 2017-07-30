@@ -6,7 +6,7 @@ $app['parameter.db.login'] = 'root';
 $app['parameter.db.password'] = 'Fred8076$';
 
 $app['parameter.log.name'] = 'app.log';
-$app['parameter.log.game'] = realpath(__DIR__ . '/log').DIRECTORY_SEPARATOR.'arcadroid.log';
+$app['parameter.log.game'] = realpath(__DIR__ . DIRECTORY_SEPARATOR.'log').DIRECTORY_SEPARATOR.'arcadroid.log';
 
 $app['parameter.ssh.host'] = '192.168.1.20';
 $app['parameter.ssh.user'] = 'root';

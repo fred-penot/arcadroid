@@ -24,7 +24,7 @@ $app['service.game'] = function ($app) {
         $app['parameter.ssh.host'],
         $app['parameter.ssh.port'],
         $app['parameter.ssh.user'],
-        $app['parameter.path.password'],
+        $app['parameter.ssh.password'],
         $app['monolog']
     );
 };
