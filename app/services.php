@@ -17,5 +17,14 @@ $app['service.security'] = function ($app) {
 };
 
 $app['service.game'] = function ($app) {
-    return new Arcadroid\Services\Game($app['db'], $app['monolog']);
+    return new Arcadroid\Services\Game(
+        $app['db'],
+        $app['parameter.emulator.bin'],
+        $app['parameter.path.rom'],
+        $app['parameter.ssh.host'],
+        $app['parameter.ssh.port'],
+        $app['parameter.ssh.user'],
+        $app['parameter.path.password'],
+        $app['monolog']
+    );
 };

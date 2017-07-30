@@ -14,3 +14,7 @@ $app['parameter.ssh.port'] = '22';
 $app['parameter.ssh.password'] = 'recalboxroot';
 
 $app['parameter.sql.path.game'] = realpath(dirname(__FILE__).DIRECTORY_SEPARATOR.'log').DIRECTORY_SEPARATOR.'game.sql';
+
+$app['parameter.emulator.bin'] = ['retroarch', 'mupen64plus'];
+
+$app['parameter.path.rom'] = '/recalbox/share/roms/';

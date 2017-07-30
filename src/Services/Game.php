@@ -3,10 +3,23 @@ namespace Arcadroid\Services;
 
 class Game {
     private $db = null;
+    private $emulatorBin = null;
+    private $pathRom = null;
+    private $sshHost = null;
+    private $sshPort = null;
+    private $sshUser = null;
+    private $sshPassword = null;
     private $log = null;
 
-    public function __construct($db, $log) {
+    public function __construct($db, $emulatorBin, $pathRom, $sshHost,
+                                $sshPort, $sshUser, $sshPassword, $log) {
         $this->db = $db;
+        $this->emulatorBin = $emulatorBin;
+        $this->pathRom = $pathRom;
+        $this->sshHost = $sshHost;
+        $this->sshPort = $sshPort;
+        $this->sshUser = $sshUser;
+        $this->sshPassword = $sshPassword;
         $this->log = $log;
     }
 
@@ -88,7 +101,7 @@ class Game {
     public function stop() {
         try {
             $sshCon = $this->sshConnectRecalbox();
-            $searchType = ['retroarch', 'mupen64plus'];
+            $searchType = $this->emulatorBin;
             foreach ($searchType as $search) {
                 $cmd = 'ps -ef | grep '.$search.' | grep -v grep';
                 $streamGrep = ssh2_exec($sshCon, $cmd);
@@ -121,7 +134,7 @@ class Game {
     public function getCurrentRunning() {
         try {
             $sshCon = $this->sshConnectRecalbox();
-            $cmd = 'ps -ef | grep /recalbox/share/roms/ | grep -v grep';
+            $cmd = 'ps -ef | grep '.$this->pathRom.' | grep -v grep';
             $streamGrep = ssh2_exec($sshCon, $cmd);
             if( !$streamGrep ) {
                 throw new \Exception("Impossible de lancer la commande !", 500);
@@ -131,7 +144,7 @@ class Game {
                 $lines = explode("\n", $streamLines);
                 if (count($lines) > 0) {
                     foreach ($lines as $line){
-                        $field = explode('/recalbox/share/roms/', $line);
+                        $field = explode($this->pathRom, $line);
                         $path = explode('/', $field[1]);
                         $romZip = trim($path[1]);
                         break;
@@ -160,15 +173,11 @@ class Game {
 
     private function sshConnectRecalbox() {
         try {
-            $host = '192.168.1.20';
-            $port = 22;
-            $user = 'root';
-            $password = 'recalboxroot';
-            $sshCon  = ssh2_connect($host, $port);
+            $sshCon  = ssh2_connect($this->sshHost, $this->sshPort);
             if( !$sshCon ) {
                 throw new \Exception("Erreur réseau", 500);
             } else {
-                if( !ssh2_auth_password( $sshCon, $user, $password ) ) {
+                if( !ssh2_auth_password( $sshCon, $this->sshUser, $this->sshPassword ) ) {
                     throw new \Exception("Erreur de login / mot de passe sur recalbox", 500);
                 } else {
                     return $sshCon;
