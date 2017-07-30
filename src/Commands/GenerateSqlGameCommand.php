@@ -6,12 +6,15 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateSqlGameCommand extends \Knp\Command\Command {
-    private $host = '192.168.1.20';
-    private $user = 'root';
-    private $port = '22';
-    private $password = 'recalboxroot';
-    private $con = null;
-    private $gameList = [];
+    private $log;
+    private $host;
+    private $user;
+    private $port;
+    private $password;
+    private $con;
+    private $db;
+    private $sqlPath;
+    private $gameList;
 
     protected function configure() {
         $this->setName("generate:sql")->setDescription(
@@ -19,21 +22,33 @@ class GenerateSqlGameCommand extends \Knp\Command\Command {
     }
 
     protected function execute(InputInterface $input, OutputInterface $output) {
+        $this->init();
         try {
-            ini_set('memory_limit', '512M');
-            $app = $this->getSilexApplication();
             $this->connectSsh();
             $this->generateGameList();
             $this->generateSql();
             //$this->renameFile();
-            $sqlPath = realpath(dirname(__FILE__).'/../../app/log').'/game.sql';
-            $msg = "Fichier genere et disponible a l emplacement : ".$sqlPath;
-            $app['monolog.game']->addInfo($msg);
+            $msg = "Fichier genere et disponible a l emplacement : ".$this->sqlPath;
+            $this->log->addInfo($msg);
             $output->writeln($msg);
         } catch (\Exception $ex) {
-            $app['monolog.game']->addError($ex->getMessage());
+            $this->log->addError($ex->getMessage());
             $output->writeln("Une erreur s'est produite : " . $ex->getMessage());
         }
+    }
+
+    private function init() {
+        ini_set('memory_limit', '512M');
+        $app = $this->getSilexApplication();
+        $this->log = $app['monolog.game'];
+        $this->host = '192.168.1.20';
+        $this->user = 'root';
+        $this->port = '22';
+        $this->password = 'recalboxroot';
+        $this->con = null;
+        $this->db = $app['db'];
+        $this->sqlPath = realpath(dirname(__FILE__).'/../../app/log').'/game.sql';
+        $this->gameList = [];
     }
 
     private function connectSsh() {
@@ -52,10 +67,8 @@ class GenerateSqlGameCommand extends \Knp\Command\Command {
 
     private function getEmulatorList() {
         try {
-            $app = $this->getSilexApplication();
-            $db = $app['db'];
             $sql = "SELECT * FROM emulator;";
-            $emulators = $db->fetchAll($sql);
+            $emulators = $this->db->fetchAll($sql);
             return $emulators;
         } catch (\Exception $ex) {
             throw new \Exception("Une erreur s'est produite : " . $ex->getMessage());
@@ -64,10 +77,8 @@ class GenerateSqlGameCommand extends \Knp\Command\Command {
 
     private function checkGame($game) {
         try {
-            $app = $this->getSilexApplication();
-            $db = $app['db'];
             $sql = "SELECT * FROM game WHERE rom='".$game['rom']."' AND emulator_id=".$game['emulator_id']." ;";
-            $gameCount = $db->fetchAll($sql);
+            $gameCount = $this->db->fetchAll($sql);
             if (count($gameCount)==0) {
                 return true;
             } else {
@@ -86,7 +97,7 @@ class GenerateSqlGameCommand extends \Knp\Command\Command {
                 $cmd = 'ls '.$path;
                 $streamLaunch = ssh2_exec( $this->con, $cmd );
                 if( !$streamLaunch ) {
-                    throw new \Exception("Impossible de lancer la commande <".$cmd.">!");
+                    throw new \Exception("Impossible de lancer la commande <".$cmd.">");
                 }
                 stream_set_blocking($streamLaunch, true);
                 $streamLines = stream_get_contents($streamLaunch);
@@ -132,11 +143,10 @@ class GenerateSqlGameCommand extends \Knp\Command\Command {
 
     private function generateSql() {
         try {
-            $sqlPath = realpath(dirname(__FILE__).'/../../app/log').'/game.sql';
-            if (file_exists($sqlPath)) {
-                unlink($sqlPath);
+            if (file_exists($this->sqlPath)) {
+                unlink($this->sqlPath);
             }
-            $sqlFile = fopen($sqlPath, 'a+');
+            $sqlFile = fopen($this->sqlPath, 'a+');
             foreach ($this->gameList as $game) {
                 fputs($sqlFile, $game['sql']."\n");
             }
@@ -153,7 +163,7 @@ class GenerateSqlGameCommand extends \Knp\Command\Command {
                 $cmd = $game['command'];
                 $streamLaunch = ssh2_exec( $this->con, $cmd );
                 if( !$streamLaunch ) {
-                    throw new \Exception("Impossible de lancer la commande <".$cmd.">!");
+                    throw new \Exception("Impossible de lancer la commande <".$cmd.">");
                 }
             }
         } catch (\Exception $ex) {
