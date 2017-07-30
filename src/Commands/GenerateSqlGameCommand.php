@@ -41,13 +41,13 @@ class GenerateSqlGameCommand extends \Knp\Command\Command {
         ini_set('memory_limit', '512M');
         $app = $this->getSilexApplication();
         $this->log = $app['monolog.game'];
-        $this->host = '192.168.1.20';
-        $this->user = 'root';
-        $this->port = '22';
-        $this->password = 'recalboxroot';
+        $this->host = $app['parameter.ssh.host'];
+        $this->user = $app['parameter.ssh.user'];
+        $this->port = $app['parameter.ssh.port'];
+        $this->password = $app['parameter.ssh.password'];
         $this->con = null;
         $this->db = $app['db'];
-        $this->sqlPath = realpath(dirname(__FILE__).'/../../app/log').'/game.sql';
+        $this->sqlPath = $app['parameter.sql.path.game'];
         $this->gameList = [];
     }
 
